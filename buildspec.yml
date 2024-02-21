@@ -1,0 +1,51 @@
+version: 0.2
+
+#env:
+  #variables:
+    #AWS_REGION: us-east-1 # checkfor specific region
+    #AWS_ACCOUNT_ID: 853394466164  # account id
+    #IMAGE_NAME: 853394466164.dkr.ecr.ap-south-1.amazonaws.com/my-application-ecr # image name
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 853394466164.dkr.ecr.ap-south-1.amazonaws.com
+      - REPOSITORY_URI=853394466164.dkr.ecr.ap-south-1.amazonaws.com/nginx-new-ten-aug-ecr
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest . #for now
+      #- docker image build -t $IMAGE_NAME . for now
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG #19-July
+      #- docker image tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_NAME:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      #- echo image name =  $IMAGE_NAME:latest #19-July
+      - echo Pushing the Docker images...
+      #- docker push $REPOSITORY_URI:latest
+      #- docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_NAME:latest
+      - echo Writing image definitions file...
+      - docker push $REPOSITORY_URI:latest #for now
+      - docker push $REPOSITORY_URI:$IMAGE_TAG #for now
+      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:latest >imageDetail.json
+      #- printf '[{"name":"DemoCluster-EC2-Containner","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > task_definition.json
+      #- printf '{"ImageURI":"'"$AWS_ACCOUNT_ID"'.dkr.ecr.'"$AWS_REGION"'.amazonaws.com/'"$IMAGE_NAME"':latest"}' > imageDetail.json
+      - cat imageDetail.json
+artifacts:
+  files: 
+    - 'image*.json'
+    - 'appspec.yml'
+    - 'taskdef.json'
+  secondary-artifacts:
+    DefinitionArtifact:
+      files:
+        - appspec.yml
+        - taskdef.json
+    ImageArtifact:
+      files:
+        - imageDetail.json
