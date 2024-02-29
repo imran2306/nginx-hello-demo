@@ -18,7 +18,8 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest . #for now
+      - docker build -t $REPOSITORY_URI:latest . 
+      # in above step building docker file with instructions from the dockerfile present in current directory 
       #- docker image build -t $IMAGE_NAME . for now
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG #19-July
       #- docker image tag $IMAGE_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_NAME:latest
